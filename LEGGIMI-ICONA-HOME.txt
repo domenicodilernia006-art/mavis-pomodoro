@@ -1,0 +1,1 @@
+Icona Home aggiornata con Mavis cartoon della intro. Carica i file estratti nella root GitHub. Su iPad elimina la vecchia icona dalla schermata Home, apri il sito in Safari e usa Condividi > Aggiungi a schermata Home per aggiornare la vecchia icona.
