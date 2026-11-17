@@ -1,0 +1,15 @@
+MAVIS POMODORO - TIMER PERSISTENTE
+
+Carica il CONTENUTO della cartella nella ROOT del repository GitHub
+mavis-pomodoro, sostituendo app.js e sw.js esistenti.
+
+Attendi la spunta verde di GitHub Pages.
+Riapri il sito online per permettere l'aggiornamento della cache.
+Per testare: avvia un timer di 1 minuto, blocca il dispositivo,
+attendi oltre 1 minuto, sblocca e riapri l'app. Deve essere
+già passata alla pausa, con tempo corretto.
+
+LIMITI: la PWA non mostra un countdown live sulla schermata di blocco
+o nel Centro di Controllo. Il suono alla scadenza con schermo bloccato
+non è garantito. Se il sistema elimina dati/cache locali, lo stato
+può andare perduto. I progressi si conservano nel browser/device.

@@ -16,12 +16,58 @@ function render(){var day=today(),daily=state.goals.filter(function(g){return g.
 function addGoal(text){text=text.trim();if(!text)return;state.goals.push({id:String(Date.now())+Math.random(),date:today(),text:text,done:false});save();render();toast('Obiettivo aggiunto! 🍅')}
 $('goal-form').addEventListener('submit',function(e){e.preventDefault();addGoal($('goal-input').value);$('goal-input').value=''});$('quick-add').onclick=function(){showPage('goals');$('goal-input').focus()};
 var titles={timer:['È ora di concentrarsi!','Mavis è qui per farti compagnia 💗'],goals:['I tuoi piccoli grandi obiettivi','Ogni traguardo merita una zampetta 🐾'],collection:['La collezione dei trofei','Scopri tutte le ricompense di Mavis 🏆'],stats:['Quanto sei cresciuta!','Guarda tutti i tuoi progressi 🍅'],settings:['Rendila tua','Personalizza le sessioni come preferisci 💗']};function showPage(page){document.querySelectorAll('.page').forEach(function(p){p.classList.toggle('active',p.id===page)});document.querySelectorAll('[data-page]').forEach(function(b){b.classList.toggle('active',b.dataset.page===page)});$('page-title').textContent=titles[page][0];$('page-subtitle').textContent=titles[page][1];window.scrollTo(0,0)}document.querySelectorAll('[data-page]').forEach(function(b){b.onclick=function(){showPage(b.dataset.page)}});
-function remaining(){if(state.timer.running&&state.timer.endAt)return Math.max(0,Math.ceil((state.timer.endAt-Date.now())/1000));return Math.max(0,state.timer.remaining)}function fmt(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
+// Il timer usa una scadenza assoluta: non dipende da setInterval in background.
+function remaining(){if(state.timer.running&&state.timer.endAt)return Math.max(0,Math.ceil((state.timer.endAt-Date.now())/1000));return Math.max(0,state.timer.remaining)}
+function fmt(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
 function renderTimer(){var t=state.timer;$('clock').textContent=fmt(remaining());$('start').textContent=t.running?'Ⅱ Pausa':'▶ Inizia';$('timer-label').textContent=t.mode==='focus'?'🍅 Tempo di studio':t.mode==='short'?'🌸 Pausa con Mavis!':'Riposati, te lo meriti!';document.querySelector('.timer-panel').classList.toggle('break-mode',t.mode!=='focus');$('timer-caption').textContent=t.running?'Mavis ti tiene compagnia ♡':'Mavis crede in te! ♡';document.querySelectorAll('[data-mode]').forEach(function(b){b.classList.toggle('selected',b.dataset.mode===t.mode)});renderReveal()}
 function renderReveal(){var t=state.timer;var status=$('reveal-status');var mask=$('mavis-mask');if(t.mode!=='focus'){mask.style.clipPath='inset(0 0 0 0)';mask.style.webkitClipPath='inset(0 0 0 0)';status.textContent='🌸 Mavis si riposa con te!';return}var total=state.durations.focus*60;var elapsed=Math.max(0,total-remaining());var segments=Math.max(1,Math.ceil(state.durations.focus/5));var revealed=Math.min(segments,Math.floor(elapsed/300));var pct=revealed/segments*100;var cut='inset(0 0 '+pct+'% 0)';mask.style.clipPath=cut;mask.style.webkitClipPath=cut;status.textContent=revealed>=segments?'🐾 Ecco Mavis! Bravissima!':('🐾 Mavis si svela ogni 5 minuti: '+revealed+' / '+segments+' parti')}
 function changeMode(mode,autoStart){var t=state.timer;t.mode=mode;t.running=!!autoStart;t.remaining=state.durations[mode]*60;t.endAt=autoStart?Date.now()+t.remaining*1000:null;save();renderTimer()}
-function finish(){var t=state.timer;if(!t.running)return;var wasFocus=t.mode==='focus';if(wasFocus){state.sessions++;state.minutes+=state.durations.focus;toast('🍅 Bravissima! Ora 5 minuti di pausa con Mavis! 🐶');changeMode('short',true)}else{toast('🐾 Pausa finita! Si ricomincia a studiare!');changeMode('focus',true)}save();render();playSound('ding');}
-function tick(){if(state.timer.running&&remaining()<=0)finish();else if(state.timer.running)renderTimer()}setInterval(tick,500);tick();
+// Recupera tutte le fasi scadute anche dopo ore con app sospesa o riaperta.
+// Le scadenze successive partono dalla precedente, non dall'ora del risveglio.
+function reconcileTimer(){
+ var t=state.timer;if(!t.running||!Number.isFinite(Number(t.endAt)))return;
+ var now=Date.now(),end=Number(t.endAt);
+ if(end>now)return;
+ var focusMs=Math.max(1,state.durations.focus)*60000;
+ var breakMs=Math.max(1,state.durations.short)*60000;
+ var elapsed=now-end,wasFocus=t.mode==='focus',completedFocus=0,transitions=0;
+ // Prima transizione alla scadenza memorizzata.
+ if(wasFocus){completedFocus++;t.mode='short';end+=breakMs}
+ else{t.mode='focus';end+=focusMs}
+ transitions++;
+ // Avanza per cicli completi in tempo costante (anche dopo giorni).
+ if(end<=now){
+   var cycle=focusMs+breakMs;
+   if(t.mode==='short'){
+     var cycles=Math.floor((now-end)/cycle);
+     if(cycles>0){completedFocus+=cycles;end+=cycles*cycle;transitions+=2*cycles}
+   }else{
+     var cycles2=Math.floor((now-end)/cycle);
+     if(cycles2>0){completedFocus+=cycles2;end+=cycles2*cycle;transitions+=2*cycles2}
+   }
+   // Al massimo due passaggi residui.
+   for(var i=0;i<3&&end<=now;i++){
+     if(t.mode==='focus'){completedFocus++;t.mode='short';end+=breakMs}
+     else{t.mode='focus';end+=focusMs}
+     transitions++;
+   }
+ }
+ t.endAt=end;t.remaining=Math.max(0,Math.ceil((end-now)/1000));
+ state.sessions+=completedFocus;state.minutes+=completedFocus*state.durations.focus;
+ save();render();
+ // Un avviso solo al rientro, non tentare di riprodurre suoni a schermo bloccato.
+ if(!document.hidden){
+   toast(completedFocus?'🍅 Mavis ha recuperato il tempo trascorso! Ora '+(t.mode==='focus'?'si studia.':'è ora della pausa!'):'🐾 Pausa conclusa! Si riparte!');
+   playSound('ding');
+ }
+}
+function tick(){reconcileTimer();if(state.timer.running)renderTimer()}
+setInterval(tick,500);
+document.addEventListener('visibilitychange',function(){if(!document.hidden){reconcileTimer();renderTimer()}});
+window.addEventListener('pageshow',function(){reconcileTimer();renderTimer()});
+window.addEventListener('focus',function(){reconcileTimer();renderTimer()});
+reconcileTimer();
+tick();
 $('start').onclick=function(){var t=state.timer;if(t.running){t.remaining=remaining();t.running=false;t.endAt=null}else{if(t.remaining<=0)t.remaining=state.durations[t.mode]*60;t.endAt=Date.now()+t.remaining*1000;t.running=true}save();renderTimer()};
 $('reset').onclick=function(){var t=state.timer;t.running=false;t.endAt=null;t.remaining=state.durations[t.mode]*60;save();renderTimer()};
 $('skip').onclick=function(){if(!confirm('Vuoi saltare questa fase e passare alla successiva?'))return;changeMode(state.timer.mode==='focus'?'short':'focus',true)};
