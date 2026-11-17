@@ -68,6 +68,41 @@ window.addEventListener('pageshow',function(){reconcileTimer();renderTimer()});
 window.addEventListener('focus',function(){reconcileTimer();renderTimer()});
 reconcileTimer();
 tick();
+// TEST SPERIMENTALE: audio reale e Media Session API, non una Live Activity.
+var mediaAudio=new Audio('assets/mavis-ambiente.wav');
+mediaAudio.loop=true;mediaAudio.preload='none';mediaAudio.volume=0.16;
+var mediaRequested=false;
+function updateMediaMetadata(){
+ if(!('mediaSession' in navigator))return;
+ try{
+  var mode=state.timer.mode==='focus'?'Studio':'Pausa';
+  navigator.mediaSession.metadata=new MediaMetadata({
+   title:'Mavis Pomodoro',artist:mode+' • '+fmt(remaining())+' rimanenti',album:'Mavis studia con te 🐾',
+   artwork:[{src:new URL('assets/icon-512.png',location.href).href,sizes:'512x512',type:'image/png'}]
+  });
+  navigator.mediaSession.playbackState=mediaRequested&&!mediaAudio.paused?'playing':'paused';
+ }catch(e){}
+}
+function stopMedia(){mediaRequested=false;mediaAudio.pause();updateMediaMetadata();var b=$('media-mode');if(b){b.textContent='🎧 Attiva controlli multimediali (test)';b.setAttribute('aria-pressed','false')}var s=$('media-status');if(s)s.textContent='Modalità multimediale disattivata.'}
+function startMedia(){
+ mediaRequested=true;updateMediaMetadata();
+ var p=mediaAudio.play();
+ if(p&&p.then)p.then(function(){updateMediaMetadata();$('media-status').textContent='Audio attivo. Ora blocca lo schermo e controlla il Centro di Controllo.'}).catch(function(){stopMedia();$('media-status').textContent='Il browser ha bloccato la riproduzione: riprova toccando il pulsante.'});
+ $('media-mode').textContent='⏹ Disattiva controlli multimediali';$('media-mode').setAttribute('aria-pressed','true');
+}
+$('media-mode').onclick=function(){if(mediaRequested)stopMedia();else startMedia()};
+if('mediaSession' in navigator){
+ try{
+  navigator.mediaSession.setActionHandler('play',function(){if(!mediaRequested)startMedia();else mediaAudio.play().catch(function(){})});
+  navigator.mediaSession.setActionHandler('pause',function(){mediaAudio.pause();updateMediaMetadata()});
+  navigator.mediaSession.setActionHandler('stop',stopMedia);
+ }catch(e){}
+}
+mediaAudio.addEventListener('play',updateMediaMetadata);
+mediaAudio.addEventListener('pause',updateMediaMetadata);
+// Il testo nei controlli viene aggiornato solo quando l'app è attiva;
+// iPadOS può sospendere JavaScript in background.
+setInterval(function(){if(mediaRequested&&!document.hidden)updateMediaMetadata()},15000);
 $('start').onclick=function(){var t=state.timer;if(t.running){t.remaining=remaining();t.running=false;t.endAt=null}else{if(t.remaining<=0)t.remaining=state.durations[t.mode]*60;t.endAt=Date.now()+t.remaining*1000;t.running=true}save();renderTimer()};
 $('reset').onclick=function(){var t=state.timer;t.running=false;t.endAt=null;t.remaining=state.durations[t.mode]*60;save();renderTimer()};
 $('skip').onclick=function(){if(!confirm('Vuoi saltare questa fase e passare alla successiva?'))return;changeMode(state.timer.mode==='focus'?'short':'focus',true)};

@@ -1,0 +1,15 @@
+MAVIS POMODORO - TEST CONTROLLI MULTIMEDIALI
+
+Carica tutti i file estratti nella ROOT del repository GitHub Pages.
+Aspetta il deploy. Ricarica la pagina due volte se la cache precedente resta attiva.
+Avvia una sessione e tocca "Attiva controlli multimediali (test)".
+Devi sentire un audio delicato: non e` un audio silenzioso.
+Blocca lo schermo e controlla la schermata di blocco / Centro di Controllo.
+
+AVVERTENZE
+- Funzionalita` sperimentale: iPadOS 14.4.1 potrebbe non mostrare nulla.
+- I controlli non sono un timer di sistema ne` una Live Activity.
+- Il tempo nel testo multimediale puo` fermarsi in background.
+- Il sistema puo` interrompere l'audio e sospendere la pagina.
+- La riproduzione consuma batteria e si interrompe con il pulsante.
+- Il timer Pomodoro resta persistente e indipendente dall'audio.
