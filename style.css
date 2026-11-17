@@ -20,3 +20,39 @@
 
 /* Modalità multimediale sperimentale */
 .media-test{margin:12px auto;max-width:420px;text-align:center}.media-test button{width:100%;cursor:pointer}.media-test p{font-size:12px;line-height:1.45;opacity:.75;margin:7px 0 12px}
+
+/* POMODORO CARTOON DEFINITIVO — cartello con contenuto HTML aggiornabile */
+.tomato.tomato-cartoon{max-width:650px;width:100%;aspect-ratio:1;margin:0 auto 10px;padding:0;background:transparent!important;border:0!important;border-radius:0;box-shadow:none;overflow:visible}
+.tomato-cartoon-art{display:block;width:100%;height:100%;object-fit:contain}
+.tomato-cartoon .cartoon-sign{position:absolute;left:29.2%;top:47.2%;width:41.5%;height:21.2%;background:#fff6eb!important;border-radius:10px;display:flex;flex-direction:column;justify-content:center;align-items:center;overflow:hidden;padding:2px 3px;gap:1px}
+.tomato-cartoon .tiny{font-size:clamp(7px,1.15vw,11px);letter-spacing:0;white-space:nowrap;line-height:1.1}
+.tomato-cartoon .cartoon-sign-main{width:100%;height:67%;display:flex;align-items:center;justify-content:center;gap:2px}
+.tomato-cartoon .cartoon-sign-time{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:center}
+.tomato-cartoon #clock{font-size:clamp(27px,4.7vw,63px);font-weight:900;letter-spacing:-2px;line-height:1.05;white-space:nowrap}
+.tomato-cartoon #timer-label{font-size:clamp(8px,1.1vw,13px);white-space:nowrap}
+.tomato-cartoon .mavis-reveal{flex:0 0 36%;width:36%;height:100%;margin:0;background:#fff2e9;border-radius:10px;overflow:hidden}
+.tomato-cartoon .mavis-reveal .timer-dog{width:100%;height:100%;object-fit:cover;object-position:center center;mix-blend-mode:normal}
+.tomato-cartoon .reveal-status{font-size:clamp(7px,.87vw,10px);min-height:0;margin:0;line-height:1.05;white-space:nowrap}
+.tomato-cartoon .timer-caption{font-size:clamp(7px,.85vw,10px);margin:0;line-height:1.05;white-space:nowrap}
+@media(max-width:650px){.tomato-cartoon .cartoon-sign{left:29%;top:47.3%;width:42%;height:21%;padding:1px 2px}.tomato-cartoon #clock{font-size:clamp(21px,6vw,36px);letter-spacing:-1px}.tomato-cartoon .tiny{font-size:clamp(5px,1.5vw,8px)}.tomato-cartoon #timer-label{font-size:clamp(6px,1.5vw,9px)}.tomato-cartoon .reveal-status,.tomato-cartoon .timer-caption{font-size:clamp(5px,1.25vw,8px)}}
+
+/* Grande ricompensa stile videogioco al termine dello studio */
+.unlock-overlay{position:fixed;inset:0;z-index:100;background:rgba(48,18,30,.78);display:flex;align-items:center;justify-content:center;padding:18px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s ease,visibility .25s ease;overflow-y:auto}
+.unlock-overlay.visible{opacity:1;visibility:visible;pointer-events:auto}
+.unlock-card{position:relative;z-index:1;width:min(94vw,560px);max-height:96vh;overflow-y:auto;text-align:center;padding:22px 24px 26px;background:linear-gradient(145deg,#fffaf1,#ffe6dc);border:5px solid #ffd080;border-radius:30px;box-shadow:0 0 0 7px #ffffff30,0 20px 80px #18050d88;animation:unlockPop .55s cubic-bezier(.18,1.4,.32,1) both}
+.unlock-eyebrow{font-weight:900;color:#b66314;letter-spacing:1.6px;font-size:clamp(11px,2.4vw,16px)}
+.unlock-card h2{font-size:clamp(23px,4vw,36px);line-height:1.15;margin:10px 0;color:#743329}
+.unlock-card p{font-size:clamp(13px,2.5vw,17px);margin:6px 0 12px;color:#9a574a}
+.unlock-image-wrap{width:min(78vw,370px);height:min(78vw,370px);max-height:42vh;margin:0 auto 10px;background:#fff;border:5px solid #f6b6aa;border-radius:24px;overflow:hidden;box-shadow:0 8px 25px #b34d4333;display:flex;align-items:center;justify-content:center}
+.unlock-image-wrap img{width:100%;height:100%;object-fit:contain}
+.unlock-note{font-weight:800;color:#bd5754;margin:10px 0 14px}
+.unlock-close{min-width:185px;font-size:17px}
+.unlock-spark{position:absolute;font-size:clamp(60px,15vw,160px);color:#ffd977;animation:unlockTwinkle 1.7s ease-in-out infinite alternate}
+.unlock-spark-a{left:9%;top:12%}.unlock-spark-b{right:9%;bottom:12%;animation-delay:.4s}
+@keyframes unlockPop{from{transform:scale(.7) translateY(25px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+@keyframes unlockTwinkle{from{opacity:.4;transform:rotate(-12deg) scale(.75)}to{opacity:1;transform:rotate(15deg) scale(1.12)}}
+/* In pausa Mavis è visibile al 100% nel cartello accanto al timer */
+.timer-panel.break-mode .tomato-cartoon .mavis-reveal{background:#fff7ed}
+.timer-panel.break-mode .tomato-cartoon .mavis-mask{display:none}
+@media(max-width:650px){.unlock-card{padding:18px 14px}.unlock-image-wrap{max-height:39vh}}
+@media(prefers-reduced-motion:reduce){.unlock-card,.unlock-spark{animation:none}}

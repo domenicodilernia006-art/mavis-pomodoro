@@ -20,7 +20,23 @@ var titles={timer:['È ora di concentrarsi!','Mavis è qui per farti compagnia �
 function remaining(){if(state.timer.running&&state.timer.endAt)return Math.max(0,Math.ceil((state.timer.endAt-Date.now())/1000));return Math.max(0,state.timer.remaining)}
 function fmt(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
 function renderTimer(){var t=state.timer;$('clock').textContent=fmt(remaining());$('start').textContent=t.running?'Ⅱ Pausa':'▶ Inizia';$('timer-label').textContent=t.mode==='focus'?'🍅 Tempo di studio':t.mode==='short'?'🌸 Pausa con Mavis!':'Riposati, te lo meriti!';document.querySelector('.timer-panel').classList.toggle('break-mode',t.mode!=='focus');$('timer-caption').textContent=t.running?'Mavis ti tiene compagnia ♡':'Mavis crede in te! ♡';document.querySelectorAll('[data-mode]').forEach(function(b){b.classList.toggle('selected',b.dataset.mode===t.mode)});renderReveal()}
-function renderReveal(){var t=state.timer;var status=$('reveal-status');var mask=$('mavis-mask');if(t.mode!=='focus'){mask.style.clipPath='inset(0 0 0 0)';mask.style.webkitClipPath='inset(0 0 0 0)';status.textContent='🌸 Mavis si riposa con te!';return}var total=state.durations.focus*60;var elapsed=Math.max(0,total-remaining());var segments=Math.max(1,Math.ceil(state.durations.focus/5));var revealed=Math.min(segments,Math.floor(elapsed/300));var pct=revealed/segments*100;var cut='inset(0 0 '+pct+'% 0)';mask.style.clipPath=cut;mask.style.webkitClipPath=cut;status.textContent=revealed>=segments?'🐾 Ecco Mavis! Bravissima!':('🐾 Mavis si svela ogni 5 minuti: '+revealed+' / '+segments+' parti')}
+function renderReveal(){var t=state.timer;var status=$('reveal-status');var mask=$('mavis-mask');if(t.mode!=='focus'){mask.style.clipPath='inset(0 0 0 0)';mask.style.webkitClipPath='inset(0 0 0 0)';status.textContent='🌸 Mavis è completamente svelata!';return}var total=state.durations.focus*60;var elapsed=Math.max(0,total-remaining());var segments=Math.max(1,Math.ceil(state.durations.focus/5));var revealed=Math.min(segments,Math.floor(elapsed/300));var pct=revealed/segments*100;var cut='inset(0 0 '+pct+'% 0)';mask.style.clipPath=cut;mask.style.webkitClipPath=cut;status.textContent=revealed>=segments?'🐾 Ecco Mavis! Bravissima!':('🐾 Mavis si svela ogni 5 minuti: '+revealed+' / '+segments+' parti')}
+// Ricompensa: si mostra solo al completamento reale di una fase focus.
+var unlockPending=false;
+function showMavisUnlock(){
+ unlockPending=true;
+ if(document.hidden)return;
+ var overlay=$('mavis-unlock');
+ overlay.classList.add('visible');overlay.setAttribute('aria-hidden','false');
+ $('unlock-continue').focus();
+}
+function closeMavisUnlock(){
+ unlockPending=false;
+ var overlay=$('mavis-unlock');overlay.classList.remove('visible');overlay.setAttribute('aria-hidden','true');
+ $('start').focus();
+}
+$('unlock-continue').addEventListener('click',closeMavisUnlock);
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&$('mavis-unlock').classList.contains('visible'))closeMavisUnlock()});
 function changeMode(mode,autoStart){var t=state.timer;t.mode=mode;t.running=!!autoStart;t.remaining=state.durations[mode]*60;t.endAt=autoStart?Date.now()+t.remaining*1000:null;save();renderTimer();syncBackgroundAudio();if(mediaRequested)updateMediaMetadata()}
 // Recupera tutte le fasi scadute anche dopo ore con app sospesa o riaperta.
 // Le scadenze successive partono dalla precedente, non dall'ora del risveglio.
@@ -56,6 +72,7 @@ function reconcileTimer(){
  state.sessions+=completedFocus;state.minutes+=completedFocus*state.durations.focus;
  save();render();
  // Un avviso solo al rientro, non tentare di riprodurre suoni a schermo bloccato.
+ if(completedFocus>0)showMavisUnlock();
  if(!document.hidden){
    toast(completedFocus?'🍅 Mavis ha recuperato il tempo trascorso! Ora '+(t.mode==='focus'?'si studia.':'è ora della pausa!'):'🐾 Pausa conclusa! Si riparte!');
    playSound('ding');
@@ -63,9 +80,9 @@ function reconcileTimer(){
 }
 function tick(){reconcileTimer();if(state.timer.running)renderTimer()}
 setInterval(tick,500);
-document.addEventListener('visibilitychange',function(){if(!document.hidden){reconcileTimer();renderTimer()}});
-window.addEventListener('pageshow',function(){reconcileTimer();renderTimer()});
-window.addEventListener('focus',function(){reconcileTimer();renderTimer()});
+document.addEventListener('visibilitychange',function(){if(!document.hidden){reconcileTimer();renderTimer();if(unlockPending)showMavisUnlock()}});
+window.addEventListener('pageshow',function(){reconcileTimer();renderTimer();if(unlockPending)showMavisUnlock()});
+window.addEventListener('focus',function(){reconcileTimer();renderTimer();if(unlockPending)showMavisUnlock()});
 reconcileTimer();
 tick();
 // TEST SPERIMENTALE: audio reale e Media Session API, non una Live Activity.

@@ -1,0 +1,12 @@
+NUOVA FUNZIONE: RICOMPENSA MAVIS
+
+Alla fine di ogni sessione di studio compare una grande schermata
+"Ricompensa sbloccata" con Mavis completa. Il pulsante
+"Vai alla pausa" la chiude. Durante la pausa Mavis resta
+interamente visibile sul cartello accanto al timer.
+
+Se iPadOS sospende la PWA, la ricompensa appare alla riapertura.
+Il timer continua a recuperare il tempo tramite l’orario assoluto.
+
+Per aggiornare GitHub Pages carica tutti i file e le cartelle
+contenuti nello ZIP nella root del repository, sovrascrivendo i vecchi.
