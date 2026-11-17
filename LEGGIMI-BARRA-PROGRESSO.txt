@@ -1,0 +1,15 @@
+TEST BARRA MULTIMEDIALE — iPadOS 14.4.1
+
+Carica il CONTENUTO dello ZIP nella root del repository GitHub,
+sostituendo app.js, sw.js e index.html. Attendi Pages verde.
+
+Apri il sito online su Safari e ricarica per aggiornare la cache.
+Imposta 5 minuti, avvia la sessione, premi il pulsante 🎧 e blocca.
+La barra prova a indicare 0/5 minuti all'avvio e ad avanzare
+secondo il timer usando Media Session setPositionState.
+
+LIMITAZIONE IMPORTANTE: iPadOS 14.4.1 potrebbe non supportare
+setPositionState, oppure ignorare la durata impostata e mostrare
+quella del file audio. In questo caso NON è possibile forzare una
+barra precisa nella PWA con questo metodo. Il timer principale
+continua comunque a funzionare correttamente al rientro.
