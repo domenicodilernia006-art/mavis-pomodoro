@@ -1,7 +1,7 @@
 (function(){'use strict';
 var KEY='mavis-pomodoro-v1';var trophies=[{n:1,name:'Primo passo',icon:'🥉',desc:'Completa 1 obiettivo'},{n:5,name:'Amica di Mavis',icon:'🐾',desc:'Completa 5 obiettivi'},{n:15,name:'Super concentrata',icon:'🥈',desc:'Completa 15 obiettivi'},{n:30,name:'Campionessa Pomodoro',icon:'🏆',desc:'Completa 30 obiettivi'},{n:50,name:'Regina dei pomodori',icon:'🍅',desc:'Completa 50 obiettivi'},{n:100,name:'Leggenda di Mavis',icon:'💎',desc:'Completa 100 obiettivi'}];
 function today(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
-var defaults={goals:[],completed:0,sessions:0,minutes:0,durations:{focus:25,short:5,long:15},timer:{mode:'focus',remaining:1500,endAt:null,running:false}};var state;try{state=JSON.parse(localStorage.getItem(KEY))||defaults}catch(e){state=defaults}state.goals=Array.isArray(state.goals)?state.goals:[];state.durations=Object.assign({},defaults.durations,state.durations||{});state.timer=Object.assign({},defaults.timer,state.timer||{});state.completed=Number(state.completed)||0;state.sessions=Number(state.sessions)||0;state.minutes=Number(state.minutes)||0;
+var defaults={goals:[],completed:0,sessions:0,minutes:0,durations:{focus:25,short:5,long:15},timer:{mode:'focus',remaining:1500,endAt:null,running:false}};var state;try{state=JSON.parse(localStorage.getItem(KEY))||defaults}catch(e){state=defaults}state.goals=Array.isArray(state.goals)?state.goals:[];state.durations=Object.assign({},defaults.durations,state.durations||{});state.timer=Object.assign({},defaults.timer,state.timer||{});state.completed=Number(state.completed)||0;state.sessions=Number(state.sessions)||0;state.minutes=Number(state.minutes)||0;state.backgroundAudioEnabled=state.backgroundAudioEnabled!==false;
 // Effetti audio locali. Il browser abilita la riproduzione dopo una prima interazione.
 var soundEnabled=true;var soundUnlocked=false;
 var sounds={ding:new Audio('assets/ding.wav'),whoosh:new Audio('assets/whoosh.wav'),pop:new Audio('assets/pop.wav')};
@@ -21,7 +21,7 @@ function remaining(){if(state.timer.running&&state.timer.endAt)return Math.max(0
 function fmt(sec){return String(Math.floor(sec/60)).padStart(2,'0')+':'+String(sec%60).padStart(2,'0')}
 function renderTimer(){var t=state.timer;$('clock').textContent=fmt(remaining());$('start').textContent=t.running?'Ⅱ Pausa':'▶ Inizia';$('timer-label').textContent=t.mode==='focus'?'🍅 Tempo di studio':t.mode==='short'?'🌸 Pausa con Mavis!':'Riposati, te lo meriti!';document.querySelector('.timer-panel').classList.toggle('break-mode',t.mode!=='focus');$('timer-caption').textContent=t.running?'Mavis ti tiene compagnia ♡':'Mavis crede in te! ♡';document.querySelectorAll('[data-mode]').forEach(function(b){b.classList.toggle('selected',b.dataset.mode===t.mode)});renderReveal()}
 function renderReveal(){var t=state.timer;var status=$('reveal-status');var mask=$('mavis-mask');if(t.mode!=='focus'){mask.style.clipPath='inset(0 0 0 0)';mask.style.webkitClipPath='inset(0 0 0 0)';status.textContent='🌸 Mavis si riposa con te!';return}var total=state.durations.focus*60;var elapsed=Math.max(0,total-remaining());var segments=Math.max(1,Math.ceil(state.durations.focus/5));var revealed=Math.min(segments,Math.floor(elapsed/300));var pct=revealed/segments*100;var cut='inset(0 0 '+pct+'% 0)';mask.style.clipPath=cut;mask.style.webkitClipPath=cut;status.textContent=revealed>=segments?'🐾 Ecco Mavis! Bravissima!':('🐾 Mavis si svela ogni 5 minuti: '+revealed+' / '+segments+' parti')}
-function changeMode(mode,autoStart){var t=state.timer;t.mode=mode;t.running=!!autoStart;t.remaining=state.durations[mode]*60;t.endAt=autoStart?Date.now()+t.remaining*1000:null;save();renderTimer();if(mediaRequested)updateMediaMetadata()}
+function changeMode(mode,autoStart){var t=state.timer;t.mode=mode;t.running=!!autoStart;t.remaining=state.durations[mode]*60;t.endAt=autoStart?Date.now()+t.remaining*1000:null;save();renderTimer();syncBackgroundAudio();if(mediaRequested)updateMediaMetadata()}
 // Recupera tutte le fasi scadute anche dopo ore con app sospesa o riaperta.
 // Le scadenze successive partono dalla precedente, non dall'ora del risveglio.
 function reconcileTimer(){
@@ -100,17 +100,29 @@ function updateMediaMetadata(){
   }
  }catch(e){}
 }
-function stopMedia(){mediaRequested=false;mediaAudio.pause();updateMediaMetadata();var b=$('media-mode');if(b){b.textContent='🎧 Attiva controlli multimediali (test)';b.setAttribute('aria-pressed','false')}var s=$('media-status');if(s)s.textContent='Modalità multimediale disattivata.'}
-function startMedia(){
- mediaRequested=true;updateMediaMetadata();
- var p=mediaAudio.play();
- if(p&&p.then)p.then(function(){updateMediaMetadata();$('media-status').textContent='Audio attivo. Ora blocca lo schermo e controlla il Centro di Controllo.'}).catch(function(){stopMedia();$('media-status').textContent='Il browser ha bloccato la riproduzione: riprova toccando il pulsante.'});
- $('media-mode').textContent='⏹ Disattiva controlli multimediali';$('media-mode').setAttribute('aria-pressed','true');
+function updateBackgroundAudioUI(){
+ var toggle=$('background-audio-toggle');if(toggle)toggle.checked=state.backgroundAudioEnabled;
+ var status=$('media-status');if(status)status.textContent=state.backgroundAudioEnabled?'🎧 Audio di sottofondo automatico durante il timer.':'🔇 Audio di sottofondo disattivato nelle impostazioni.';
 }
-$('media-mode').onclick=function(){if(mediaRequested)stopMedia();else startMedia()};
+function stopMedia(){mediaRequested=false;mediaAudio.pause();updateMediaMetadata();updateBackgroundAudioUI()}
+function startMedia(){
+ if(!state.backgroundAudioEnabled||!state.timer.running){stopMedia();return}
+ mediaRequested=true;
+ var p;
+ try{p=mediaAudio.play()}catch(e){p=Promise.reject(e)}
+ if(p&&p.then)p.then(function(){updateMediaMetadata();updateBackgroundAudioUI()}).catch(function(){
+   mediaRequested=false;updateMediaMetadata();
+   var status=$('media-status');if(status)status.textContent='Per attivare l’audio, premi Pausa e poi Inizia: Safari richiede un tocco.';
+ });
+ updateMediaMetadata();
+}
+function syncBackgroundAudio(){if(state.backgroundAudioEnabled&&state.timer.running)startMedia();else stopMedia()}
+var audioToggle=$('background-audio-toggle');
+if(audioToggle)audioToggle.onchange=function(){state.backgroundAudioEnabled=this.checked;save();syncBackgroundAudio();updateBackgroundAudioUI()};
+updateBackgroundAudioUI();
 if('mediaSession' in navigator){
  try{
-  navigator.mediaSession.setActionHandler('play',function(){if(!mediaRequested)startMedia();else mediaAudio.play().catch(function(){})});
+  navigator.mediaSession.setActionHandler('play',function(){if(state.timer.running&&state.backgroundAudioEnabled)startMedia()});
   navigator.mediaSession.setActionHandler('pause',function(){mediaAudio.pause();updateMediaMetadata()});
   navigator.mediaSession.setActionHandler('stop',stopMedia);
  }catch(e){}
@@ -120,15 +132,15 @@ mediaAudio.addEventListener('pause',updateMediaMetadata);
 // Il testo nei controlli viene aggiornato solo quando l'app è attiva;
 // iPadOS può sospendere JavaScript in background.
 setInterval(function(){if(mediaRequested&&!document.hidden)updateMediaMetadata()},1000);
-$('start').onclick=function(){var t=state.timer;if(t.running){t.remaining=remaining();t.running=false;t.endAt=null}else{if(t.remaining<=0)t.remaining=state.durations[t.mode]*60;t.endAt=Date.now()+t.remaining*1000;t.running=true}save();renderTimer();if(mediaRequested)updateMediaMetadata()};
-$('reset').onclick=function(){var t=state.timer;t.running=false;t.endAt=null;t.remaining=state.durations[t.mode]*60;save();renderTimer();if(mediaRequested)updateMediaMetadata()};
+$('start').onclick=function(){var t=state.timer;if(t.running){t.remaining=remaining();t.running=false;t.endAt=null}else{if(t.remaining<=0)t.remaining=state.durations[t.mode]*60;t.endAt=Date.now()+t.remaining*1000;t.running=true}save();renderTimer();syncBackgroundAudio();if(mediaRequested)updateMediaMetadata()};
+$('reset').onclick=function(){var t=state.timer;t.running=false;t.endAt=null;t.remaining=state.durations[t.mode]*60;save();renderTimer();syncBackgroundAudio();if(mediaRequested)updateMediaMetadata()};
 $('skip').onclick=function(){if(!confirm('Vuoi saltare questa fase e passare alla successiva?'))return;changeMode(state.timer.mode==='focus'?'short':'focus',true)};
 document.querySelectorAll('[data-mode]').forEach(function(b){b.onclick=function(){var t=state.timer;if(t.running&&!confirm('Cambiare modalità interromperà il timer. Continuare?'))return;changeMode(b.dataset.mode,false)}});
 $('welcome-start').onclick=function(){playSound('pop');$('welcome-first').hidden=true;$('session-setup').hidden=false};
 $('setup-back').onclick=function(){$('welcome-first').hidden=false;$('session-setup').hidden=true};
 $('session-setup').onsubmit=function(e){e.preventDefault();playSound('pop');var focus=Math.round(Number($('setup-focus').value)),rest=Math.round(Number($('setup-break').value));if(!(focus>=1&&focus<=180&&rest>=1&&rest<=60)){toast('Scegli durate valide');return}state.durations.focus=focus;state.durations.short=rest;changeMode('focus',true);$('welcome').classList.add('hidden');render();toast('Buono studio! Mavis fa il tifo per te 🐾')};
-$('new-session').onclick=function(){playSound('pop');var t=state.timer;if(t.running&&!confirm('Vuoi interrompere la sessione attuale e sceglierne una nuova?'))return;t.remaining=remaining();t.running=false;t.endAt=null;save();$('setup-focus').value=state.durations.focus;$('setup-break').value=state.durations.short;$('welcome-first').hidden=false;$('session-setup').hidden=true;$('welcome').classList.remove('hidden');renderTimer()};
-$('settings-form').onsubmit=function(e){e.preventDefault();['focus','short','long'].forEach(function(m){state.durations[m]=Math.max(1,Math.round(Number($('set-'+m).value)||defaults.durations[m]))});state.timer.running=false;state.timer.endAt=null;state.timer.remaining=state.durations[state.timer.mode]*60;save();render();toast('Impostazioni salvate! 💗')};$('clear-data').onclick=function(){if(!confirm('Cancellare tutti gli obiettivi, le statistiche e i trofei? Questa azione è irreversibile.'))return;state=JSON.parse(JSON.stringify(defaults));save();render();toast('Progressi azzerati')};var intro=$('intro');var introTimer=setTimeout(closeIntro,4300);function closeIntro(){playSound('whoosh');clearTimeout(introTimer);intro.classList.add('dismissed');setTimeout(function(){intro.hidden=true},750)}$('intro-skip').onclick=closeIntro;
+$('new-session').onclick=function(){playSound('pop');var t=state.timer;if(t.running&&!confirm('Vuoi interrompere la sessione attuale e sceglierne una nuova?'))return;t.remaining=remaining();t.running=false;t.endAt=null;save();syncBackgroundAudio();$('setup-focus').value=state.durations.focus;$('setup-break').value=state.durations.short;$('welcome-first').hidden=false;$('session-setup').hidden=true;$('welcome').classList.remove('hidden');renderTimer()};
+$('settings-form').onsubmit=function(e){e.preventDefault();['focus','short','long'].forEach(function(m){state.durations[m]=Math.max(1,Math.round(Number($('set-'+m).value)||defaults.durations[m]))});state.timer.running=false;state.timer.endAt=null;state.timer.remaining=state.durations[state.timer.mode]*60;save();render();syncBackgroundAudio();toast('Impostazioni salvate! 💗')};$('clear-data').onclick=function(){if(!confirm('Cancellare tutti gli obiettivi, le statistiche e i trofei? Questa azione è irreversibile.'))return;state=JSON.parse(JSON.stringify(defaults));state.backgroundAudioEnabled=true;save();render();syncBackgroundAudio();updateBackgroundAudioUI();toast('Progressi azzerati')};var intro=$('intro');var introTimer=setTimeout(closeIntro,4300);function closeIntro(){playSound('whoosh');clearTimeout(introTimer);intro.classList.add('dismissed');setTimeout(function(){intro.hidden=true},750)}$('intro-skip').onclick=closeIntro;
 // Suono delicato di movimento solo se l'utente ha già interagito.
 setTimeout(function(){playSound('whoosh')},1100);
 setTimeout(function(){playSound('pop')},2400);

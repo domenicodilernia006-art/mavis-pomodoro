@@ -1,4 +1,4 @@
-const CACHE='mavis-pomodoro-ipad-pwa-4';
+const CACHE='mavis-pomodoro-ipad-pwa-5';
 const ASSETS=["./", "./index.html", "./style.css", "./app.js", "./manifest.webmanifest", "./assets/mavis-ambiente.wav", "./assets/ding.wav", "./assets/icon-512.png", "./assets/icon.png", "./assets/mavis-cartoon.webp", "./assets/mavis-original.webp", "./assets/mavis-timer.webp", "./assets/mavis.webp", "./assets/pop.wav", "./assets/whoosh.wav"];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));

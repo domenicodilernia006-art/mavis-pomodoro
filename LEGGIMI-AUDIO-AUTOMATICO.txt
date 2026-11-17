@@ -1,0 +1,9 @@
+NOVITÀ: Impostazioni → 🎧 Audio di sottofondo automatico quando parte il timer.
+Attivo per impostazione predefinita, salvato sul dispositivo.
+Avvio e pausa del timer avviano e fermano automaticamente l’audio.
+Non serve più il vecchio pulsante sperimentale.
+L’audio richiede una interazione utente; su iPadOS 14.4.1 non è garantito
+che la barra multimediale mostri la durata impostata o resti sempre attiva.
+
+Carica il contenuto nella root del repository GitHub, sostituendo i file.
+Attendi il deploy Pages, ricarica online e riapri l’app per aggiornare la cache.
