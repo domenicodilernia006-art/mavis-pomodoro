@@ -1,0 +1,14 @@
+VERSIONE SPERIMENTALE — BARRA ANCHE SENZA AUDIO UDIBILE
+
+L’opzione in Impostazioni controlla solo il sottofondo udibile.
+Se la disattivi, il timer prova a mantenere la sessione multimediale
+con una traccia silenziosa. La barra viene avviata automaticamente
+quando avvii il timer, indipendentemente dall’impostazione audio.
+Quando metti in pausa o resetti, la riproduzione si ferma.
+
+ATTENZIONE: iPadOS 14.4.1 potrebbe non mantenere i controlli
+multimediali quando riproduce una traccia completamente silenziosa.
+Non è garantita la barra sulla schermata di blocco in questa modalità.
+
+Carica tutti i file nella root del repository GitHub, attendi
+la pubblicazione e ricarica il sito per aggiornare la cache offline.

@@ -69,7 +69,7 @@ window.addEventListener('focus',function(){reconcileTimer();renderTimer()});
 reconcileTimer();
 tick();
 // TEST SPERIMENTALE: audio reale e Media Session API, non una Live Activity.
-var mediaAudio=new Audio('assets/mavis-ambiente.wav');
+var mediaAudio=new Audio(state.backgroundAudioEnabled?'assets/mavis-ambiente.wav':'assets/mavis-silenzio.wav');
 mediaAudio.loop=true;mediaAudio.preload='none';mediaAudio.volume=0.16;
 var mediaRequested=false;
 function updateMediaMetadata(){
@@ -102,11 +102,11 @@ function updateMediaMetadata(){
 }
 function updateBackgroundAudioUI(){
  var toggle=$('background-audio-toggle');if(toggle)toggle.checked=state.backgroundAudioEnabled;
- var status=$('media-status');if(status)status.textContent=state.backgroundAudioEnabled?'🎧 Audio di sottofondo automatico durante il timer.':'🔇 Audio di sottofondo disattivato nelle impostazioni.';
+ var status=$('media-status');if(status)status.textContent=state.backgroundAudioEnabled?'🎧 Barra attiva con audio di sottofondo.':'🔇 Barra attiva con traccia silenziosa (test su iPadOS).';
 }
 function stopMedia(){mediaRequested=false;mediaAudio.pause();updateMediaMetadata();updateBackgroundAudioUI()}
 function startMedia(){
- if(!state.backgroundAudioEnabled||!state.timer.running){stopMedia();return}
+ if(!state.timer.running){stopMedia();return}
  mediaRequested=true;
  var p;
  try{p=mediaAudio.play()}catch(e){p=Promise.reject(e)}
@@ -116,13 +116,19 @@ function startMedia(){
  });
  updateMediaMetadata();
 }
-function syncBackgroundAudio(){if(state.backgroundAudioEnabled&&state.timer.running)startMedia();else stopMedia()}
+function selectMediaTrack(){
+ var target=state.backgroundAudioEnabled?'assets/mavis-ambiente.wav':'assets/mavis-silenzio.wav';
+ if(mediaAudio.getAttribute('src')!==target){
+   mediaAudio.pause();mediaAudio.setAttribute('src',target);mediaAudio.load();
+ }
+}
+function syncBackgroundAudio(){selectMediaTrack();if(state.timer.running)startMedia();else stopMedia()}
 var audioToggle=$('background-audio-toggle');
 if(audioToggle)audioToggle.onchange=function(){state.backgroundAudioEnabled=this.checked;save();syncBackgroundAudio();updateBackgroundAudioUI()};
 updateBackgroundAudioUI();
 if('mediaSession' in navigator){
  try{
-  navigator.mediaSession.setActionHandler('play',function(){if(state.timer.running&&state.backgroundAudioEnabled)startMedia()});
+  navigator.mediaSession.setActionHandler('play',function(){if(state.timer.running)startMedia()});
   navigator.mediaSession.setActionHandler('pause',function(){mediaAudio.pause();updateMediaMetadata()});
   navigator.mediaSession.setActionHandler('stop',stopMedia);
  }catch(e){}
